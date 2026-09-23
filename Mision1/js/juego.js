@@ -3,9 +3,16 @@
 const TAMANO_MANO = 5;
 const PUNTOS_RESONANCIA = 2;
 const PAUSA_ENTRE_RONDAS = 1200;
+const PUNTOS_VICTORIA = 5;
+const CLAVE_HISTORIAL = "duelo-runas-historial";
 const NOMBRE_RIVAL = {
   aprendiz: "Aprendiz",
   archimago: "Archimago",
+};
+const TITULOS_FIN = {
+  victoria: "🏆 ¡Victoria!",
+  derrota: "💀 Derrota",
+  empate: "⚖️ Empate",
 };
 
 const dom = {
@@ -13,6 +20,7 @@ const dom = {
   formInicio: document.querySelector("#form-inicio"),
   inputNombre: document.querySelector("#nombre"),
   selectDificultad: document.querySelector("#dificultad"),
+  historial: document.querySelector("#historial"),
   tablero: document.querySelector("#tablero"),
   nombreJugador: document.querySelector("#nombre-jugador"),
   nombreRival: document.querySelector("#nombre-rival"),
@@ -27,6 +35,11 @@ const dom = {
   resultado: document.querySelector("#resultado-ronda"),
   cronica: document.querySelector("#cronica"),
   plantillaCarta: document.querySelector("#plantilla-carta"),
+  dialogoFin: document.querySelector("#fin-partida"),
+  tituloFin: document.querySelector("#titulo-fin"),
+  textoFin: document.querySelector("#texto-fin"),
+  botonRevancha: document.querySelector("#boton-revancha"),
+  botonSalir: document.querySelector("#boton-salir"),
 };
 
 let estado = null;
@@ -44,6 +57,36 @@ function crearEstadoInicial(nombre, dificultad) {
     ultimaVictoria: null,
     bloqueado: false,
   };
+}
+
+// ---------- Historial (localStorage) ----------
+
+function leerHistorial() {
+  const vacio = { victoria: 0, derrota: 0, empate: 0 };
+  try {
+    return { ...vacio, ...JSON.parse(localStorage.getItem(CLAVE_HISTORIAL)) };
+  } catch {
+    return vacio;
+  }
+}
+
+function registrarEnHistorial(desenlace) {
+  const historial = leerHistorial();
+  historial[desenlace]++;
+  try {
+    localStorage.setItem(CLAVE_HISTORIAL, JSON.stringify(historial));
+  } catch {
+    // Sin acceso al almacenamiento el juego sigue funcionando, solo no se guarda
+  }
+}
+
+function pintarHistorial() {
+  const { victoria, derrota, empate } = leerHistorial();
+  const total = victoria + derrota + empate;
+  dom.historial.textContent =
+    total === 0
+      ? "Aún no has librado ningún duelo."
+      : `Historial: ${victoria} victorias · ${derrota} derrotas · ${empate} empates`;
 }
 
 // ---------- Pintado ----------
@@ -148,11 +191,14 @@ function puntosPorVictoria(ganador, cartaGanadora) {
 
 function describirRonda(resultado, cartaGanadora, puntosGanados) {
   const { poderJugador, poderRival, ganador } = resultado;
-  const marcadorRonda = `${poderJugador} vs ${poderRival}`;
 
   if (ganador === "empate") {
-    return `Empate (${marcadorRonda}). Nadie puntúa.`;
+    return `Empate (${poderJugador} vs ${poderRival}). Nadie puntúa.`;
   }
+
+  const poderGanador = Math.max(poderJugador, poderRival);
+  const poderPerdedor = Math.min(poderJugador, poderRival);
+  const marcadorRonda = `${poderGanador} vs ${poderPerdedor}`;
 
   const nombreGanador = ganador === "jugador" ? estado.nombre : NOMBRE_RIVAL[estado.dificultad];
   const bonus = puntosGanados === PUNTOS_RESONANCIA ? `¡Resonancia! +${PUNTOS_RESONANCIA}` : "+1";
@@ -193,7 +239,13 @@ function jugarRonda(indice) {
   dom.slotRival.replaceChildren(crearCartaEnArena(cartaRival, "rival", ganador));
   pintarTablero();
 
-  setTimeout(siguienteRonda, PAUSA_ENTRE_RONDAS);
+  setTimeout(partidaTerminada() ? terminarPartida : siguienteRonda, PAUSA_ENTRE_RONDAS);
+}
+
+function partidaTerminada() {
+  const { jugador, rival } = estado.puntos;
+  const sinCartas = estado.manoJugador.length === 0 && estado.mazo.length === 0;
+  return jugador >= PUNTOS_VICTORIA || rival >= PUNTOS_VICTORIA || sinCartas;
 }
 
 function siguienteRonda() {
@@ -203,6 +255,31 @@ function siguienteRonda() {
   estado.bloqueado = false;
   dom.manoJugador.classList.remove("mano-bloqueada");
   pintarTablero();
+}
+
+function terminarPartida() {
+  const { jugador, rival } = estado.puntos;
+  let desenlace = "empate";
+  if (jugador > rival) {
+    desenlace = "victoria";
+  } else if (rival > jugador) {
+    desenlace = "derrota";
+  }
+
+  registrarEnHistorial(desenlace);
+  dom.tituloFin.textContent = TITULOS_FIN[desenlace];
+  dom.textoFin.textContent =
+    `${estado.nombre} ${jugador} – ${rival} ${NOMBRE_RIVAL[estado.dificultad]} ` +
+    `tras ${estado.ronda} rondas.`;
+  dom.dialogoFin.showModal();
+}
+
+function volverAlInicio() {
+  estado = null;
+  dom.tablero.hidden = true;
+  dom.pantallaInicio.hidden = false;
+  pintarHistorial();
+  dom.inputNombre.focus();
 }
 
 // ---------- Eventos ----------
@@ -226,7 +303,7 @@ dom.manoJugador.addEventListener("click", (evento) => {
 });
 
 document.addEventListener("keydown", (evento) => {
-  if (dom.tablero.hidden || evento.repeat) {
+  if (dom.tablero.hidden || dom.dialogoFin.open || evento.repeat) {
     return;
   }
   const indice = Number(evento.key) - 1;
@@ -234,3 +311,20 @@ document.addEventListener("keydown", (evento) => {
     jugarRonda(indice);
   }
 });
+
+dom.botonRevancha.addEventListener("click", () => {
+  dom.dialogoFin.close();
+  iniciarPartida(estado.nombre, estado.dificultad);
+});
+
+dom.botonSalir.addEventListener("click", () => {
+  dom.dialogoFin.close();
+  volverAlInicio();
+});
+
+// Con Escape el diálogo se cerraría y dejaría el tablero bloqueado
+dom.dialogoFin.addEventListener("cancel", (evento) => {
+  evento.preventDefault();
+});
+
+pintarHistorial();

@@ -291,6 +291,10 @@ kbd {
   font-weight: 700;
 }
 
+.boton-devolver:disabled {
+  opacity: 0.4;
+}
+
 .cambio {
   width: 100%;
   min-height: 60px;

@@ -161,6 +161,7 @@ function actualizarPantalla(mensaje, esError = false) {
   dom.pantalla.classList.toggle("pantalla-error", esError);
   dom.saldo.textContent = formatearEuros(estado.saldo);
   dom.codigo.textContent = estado.codigo.padEnd(2, "-");
+  dom.botonDevolver.disabled = !hayAlgoQueCancelar();
   for (const [codigoTarjeta, tarjeta] of tarjetas) {
     tarjeta.classList.toggle("producto-seleccionado", codigoTarjeta === estado.codigo);
   }
@@ -201,6 +202,9 @@ function marcarCaracter(caracter) {
 }
 
 function borrarCaracter() {
+  if (estado.codigo === "") {
+    return;
+  }
   estado.codigo = estado.codigo.slice(0, -1);
   actualizarPantalla(describirCodigo());
 }
@@ -247,14 +251,18 @@ function devolverSaldo() {
   return true;
 }
 
+function hayAlgoQueCancelar() {
+  return estado.saldo > 0 || estado.codigo !== "";
+}
+
+// Si no hay nada que cancelar no hace nada: así Escape no muestra errores sin motivo
 function cancelarOperacion() {
+  if (!hayAlgoQueCancelar()) {
+    return;
+  }
   estado.codigo = "";
   const hayCambio = devolverSaldo();
-  if (hayCambio) {
-    actualizarPantalla("Operación cancelada. Recoge tu dinero");
-  } else {
-    actualizarPantalla("No hay dinero que devolver", true);
-  }
+  actualizarPantalla(hayCambio ? "Operación cancelada. Recoge tu dinero" : "Código borrado");
 }
 
 function recogerCambio() {
@@ -307,10 +315,19 @@ dom.botonDevolver.addEventListener("click", cancelarOperacion);
 dom.cambio.addEventListener("click", recogerCambio);
 dom.bandeja.addEventListener("click", recogerProducto);
 
+// Teclas que se deja gestionar al navegador:
+// - combinaciones como Ctrl+C o Ctrl+A (copiar, seleccionar todo…)
+// - la autorrepetición al mantener una tecla pulsada
+// - Enter sobre un botón con el foco, que debe pulsar ese botón y no comprar
+function esTeclaDelNavegador(evento) {
+  const conModificador = evento.ctrlKey || evento.altKey || evento.metaKey;
+  const enterSobreBoton = evento.key === "Enter" && evento.target instanceof HTMLButtonElement;
+  return conModificador || evento.repeat || enterSobreBoton;
+}
+
 // Atajos: A-C y 1-4 marcan el código, Enter = OK, Retroceso = borrar, Escape = devolver
 document.addEventListener("keydown", (evento) => {
-  // Enter sobre un botón con el foco debe pulsar ese botón, no comprar
-  if (evento.repeat || (evento.key === "Enter" && evento.target instanceof HTMLButtonElement)) {
+  if (esTeclaDelNavegador(evento)) {
     return;
   }
 

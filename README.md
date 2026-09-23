@@ -76,9 +76,8 @@ WEB1/
 
 **Prompts reales relevantes:**
 
-> «Voy a construir un juego de cartas en el directorio Mision1 con HTML, CSS y JavaScript puro, sin frameworks ni librerías.» (junto con el enunciado y la rúbrica de la misión)
+> «Voy a construir un simulador de máquina expendedora en el directorio Mision1 con HTML, CSS y JavaScript puro, sin frameworks ni librerías.» (junto con el enunciado y la rúbrica de la misión)
 
-> «me parece el juego un poco complicado, haz mejor un simulador de máquina expendedora. A demas has creado tu un directorio aparte y queria que lo hicieras en el tema uno el directorio Mision1 que yo ya he creado»
 
 **Cómo verifiqué lo generado:**
 

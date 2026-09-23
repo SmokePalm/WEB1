@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adivina el número</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #1e1b2e;
+      color: #f1f0f7;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+    main {
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+    }
+    input, button {
+      font-size: 1.1rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+    }
+    input { width: 100px; }
+    button {
+      background: #8b5cf6;
+      color: white;
+      cursor: pointer;
+    }
+    button:disabled {
+      background: #555;
+      cursor: not-allowed;
+    }
+    #mensaje { font-size: 1.2rem; min-height: 1.5em; }
+  </style>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main>
+    <h1>🔮 Adivina el número</h1>
+    <p>El oráculo ha pensado un número entre 1 y 100.</p>
+
+    <input type="number" id="numero" min="1" max="100" placeholder="1–100">
+    <button id="consultar">Consultar</button>
+
+    <p id="mensaje"></p>
+    <p id="intentos">Intentos: 0</p>
+  </main>
+</body>
+</html>

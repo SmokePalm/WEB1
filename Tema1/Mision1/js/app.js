@@ -1,6 +1,8 @@
 // Interfaz de la máquina: estado, pintado del DOM y eventos.
 
-const TECLAS = ["A", "B", "C", "⌫", "1", "2", "3", "4", "OK"];
+const FILAS = ["A", "B", "C"];
+const COLUMNAS = ["1", "2", "3", "4"];
+const TECLAS = [...FILAS, "⌫", ...COLUMNAS, "OK"];
 
 const dom = {
   productos: document.querySelector("#productos"),
@@ -91,7 +93,88 @@ function mostrarMensaje(texto, esError = false) {
 function actualizarPantalla() {
   dom.saldo.textContent = formatearEuros(saldo);
   dom.codigo.textContent = codigo.padEnd(2, "-");
+  for (const [codigoTarjeta, tarjeta] of tarjetas) {
+    tarjeta.classList.toggle("producto-seleccionado", codigoTarjeta === codigo);
+  }
 }
+
+// ---------- Acciones ----------
+
+function buscarProducto(codigoBuscado) {
+  return inventario.find((producto) => producto.codigo === codigoBuscado);
+}
+
+function insertarMoneda(valor) {
+  saldo += valor;
+  actualizarPantalla();
+  mostrarMensaje(`Has metido ${formatearEuros(valor)}`);
+}
+
+// El código es siempre una fila (letra) seguida de una columna (número)
+function pulsarTecla(tecla) {
+  if (tecla === "OK") {
+    comprar();
+    return;
+  }
+
+  if (tecla === "⌫") {
+    codigo = codigo.slice(0, -1);
+  } else if (codigo.length === 0 && FILAS.includes(tecla)) {
+    codigo = tecla;
+  } else if (codigo.length === 1 && COLUMNAS.includes(tecla)) {
+    codigo += tecla;
+  } else {
+    mostrarMensaje("Marca una letra y después un número", true);
+    return;
+  }
+
+  actualizarPantalla();
+  const producto = buscarProducto(codigo);
+  if (producto !== undefined) {
+    mostrarMensaje(`${producto.nombre}: ${formatearEuros(producto.precio)}. Pulsa OK`);
+  }
+}
+
+function comprar() {
+  const producto = buscarProducto(codigo);
+
+  if (producto === undefined) {
+    mostrarMensaje("Marca un código completo, por ejemplo A1", true);
+    return;
+  }
+  if (producto.stock === 0) {
+    mostrarMensaje(`${producto.nombre}: agotado. Elige otro`, true);
+    return;
+  }
+  if (saldo < producto.precio) {
+    mostrarMensaje(`Faltan ${formatearEuros(producto.precio - saldo)}`, true);
+    return;
+  }
+
+  producto.stock--;
+  saldo -= producto.precio;
+  codigo = "";
+  actualizarTarjeta(producto);
+  actualizarPantalla();
+  mostrarMensaje(`Aquí tienes: ${producto.nombre}`);
+}
+
+// ---------- Eventos ----------
+
+// Delegación: un único listener para todas las monedas y otro para todo el teclado
+dom.monedas.addEventListener("click", (evento) => {
+  const boton = evento.target.closest(".moneda");
+  if (boton !== null) {
+    insertarMoneda(Number(boton.dataset.valor));
+  }
+});
+
+dom.teclado.addEventListener("click", (evento) => {
+  const boton = evento.target.closest(".tecla");
+  if (boton !== null) {
+    pulsarTecla(boton.dataset.tecla);
+  }
+});
 
 // ---------- Inicio ----------
 

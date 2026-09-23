@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Máquina expendedora</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/datos.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <header class="cabecera">
+    <h1>🥤 Vendomatic 3000</h1>
+    <p>Mete monedas, marca el código del producto y pulsa OK.</p>
+  </header>
+
+  <main class="maquina">
+    <section class="escaparate">
+      <h2 class="oculto">Productos</h2>
+      <div id="productos" class="productos"></div>
+
+      <button id="bandeja" type="button" class="bandeja" disabled>
+        Bandeja vacía
+      </button>
+    </section>
+
+    <section class="panel">
+      <div id="pantalla" class="pantalla" aria-live="polite">
+        <p id="mensaje" class="pantalla-mensaje">Inserta monedas</p>
+        <p>Saldo: <strong id="saldo">0,00 €</strong></p>
+        <p>Código: <strong id="codigo">--</strong></p>
+      </div>
+
+      <div id="teclado" class="teclado"></div>
+
+      <h2>Monedas</h2>
+      <div id="monedas" class="monedas"></div>
+
+      <button id="boton-devolver" type="button" class="boton-devolver">Devolver dinero</button>
+
+      <h2>Cambio</h2>
+      <button id="cambio" type="button" class="cambio" disabled></button>
+    </section>
+  </main>
+
+  <section class="bolsa">
+    <h2>Tu bolsa</h2>
+    <ul id="lista-bolsa" class="lista-bolsa"></ul>
+    <p id="gastado" class="gastado">Todavía no has comprado nada.</p>
+  </section>
+
+  <template id="plantilla-producto">
+    <article class="producto">
+      <span class="producto-codigo"></span>
+      <span class="producto-emoji"></span>
+      <span class="producto-nombre"></span>
+      <span class="producto-precio"></span>
+      <span class="producto-stock"></span>
+    </article>
+  </template>
+</body>
+</html>

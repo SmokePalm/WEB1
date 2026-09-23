@@ -1,0 +1,348 @@
+:root {
+  --fondo: #eef1f5;
+  --carcasa: #c62f3b;
+  --carcasa-oscura: #9e1f2a;
+  --cristal: #1c2433;
+  --tarjeta: #2a3447;
+  --texto: #1d2230;
+  --texto-claro: #f3f5f9;
+  --pantalla: #0f2a1c;
+  --pantalla-texto: #6dff9e;
+  --error: #ff7a7a;
+  --oro: #e8b931;
+  --plata: #c7ccd4;
+  --radio: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", sans-serif;
+  background: var(--fondo);
+  color: var(--texto);
+  padding: 24px 16px 48px;
+}
+
+h2 {
+  font-size: 0.95rem;
+  margin: 16px 0 8px;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.cabecera h1 {
+  margin: 0;
+  color: var(--carcasa);
+}
+
+.cabecera p {
+  margin: 8px 0 0;
+}
+
+/* ---------- Máquina ---------- */
+
+.maquina {
+  max-width: 900px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 20px;
+  background: linear-gradient(180deg, var(--carcasa), var(--carcasa-oscura));
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+}
+
+.escaparate {
+  background: var(--cristal);
+  border-radius: var(--radio);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.productos {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.producto {
+  background: var(--tarjeta);
+  color: var(--texto-claro);
+  border-radius: 10px;
+  padding: 10px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+  transition: opacity 0.3s, transform 0.2s;
+}
+
+.producto-codigo {
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--oro);
+  color: var(--texto);
+  border-radius: 4px;
+  padding: 1px 6px;
+}
+
+.producto-emoji {
+  font-size: 2.2rem;
+}
+
+.producto-nombre {
+  font-size: 0.8rem;
+  min-height: 2.2em;
+}
+
+.producto-precio {
+  font-weight: 700;
+  color: var(--oro);
+}
+
+.producto-stock {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.producto-seleccionado {
+  outline: 3px solid var(--pantalla-texto);
+  transform: scale(1.04);
+}
+
+.producto-agotado {
+  opacity: 0.35;
+}
+
+.producto-agotado .producto-stock {
+  color: var(--error);
+  opacity: 1;
+  font-weight: 700;
+}
+
+.bandeja {
+  min-height: 72px;
+  border: 3px solid #0b0f17;
+  border-radius: 10px;
+  background: #0b0f17;
+  color: var(--plata);
+  font-size: 1rem;
+}
+
+.bandeja:not(:disabled) {
+  color: var(--texto-claro);
+  font-size: 1.1rem;
+  font-weight: 700;
+  border-color: var(--oro);
+}
+
+.bandeja-emoji {
+  display: inline-block;
+  font-size: 2rem;
+  vertical-align: middle;
+  margin-right: 8px;
+  animation: caer 0.5s ease-in;
+}
+
+@keyframes caer {
+  from {
+    transform: translateY(-80px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ---------- Panel de control ---------- */
+
+.panel {
+  background: #e4e7ec;
+  border-radius: var(--radio);
+  padding: 16px;
+}
+
+.pantalla {
+  background: var(--pantalla);
+  color: var(--pantalla-texto);
+  font-family: "Consolas", "Courier New", monospace;
+  border-radius: 8px;
+  padding: 10px 12px;
+  border: 3px solid #333;
+}
+
+.pantalla p {
+  margin: 4px 0;
+}
+
+.pantalla-mensaje {
+  min-height: 2.6em;
+}
+
+.pantalla-error {
+  color: var(--error);
+}
+
+.teclado {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.tecla {
+  padding: 10px 0;
+  border: none;
+  border-radius: 6px;
+  background: #fff;
+  font-weight: 700;
+  box-shadow: 0 3px 0 #9aa1ad;
+}
+
+.tecla:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #9aa1ad;
+}
+
+.tecla-ok {
+  grid-column: span 4;
+  background: var(--pantalla-texto);
+}
+
+.monedas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.moneda {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 3px solid rgba(0, 0, 0, 0.2);
+  background: var(--plata);
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition: transform 0.15s;
+}
+
+.moneda:hover {
+  transform: scale(1.1);
+}
+
+.moneda-oro {
+  background: var(--oro);
+}
+
+.boton-devolver {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: var(--texto);
+  color: var(--texto-claro);
+  font-weight: 700;
+}
+
+.cambio {
+  width: 100%;
+  min-height: 60px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: 8px;
+  border: 2px dashed #9aa1ad;
+  border-radius: 8px;
+  background: #d5d9e0;
+}
+
+.cambio:disabled::before {
+  content: "Sin cambio";
+  color: #6b7280;
+}
+
+.cambio .moneda {
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  animation: caer 0.3s ease-in;
+}
+
+/* ---------- Bolsa ---------- */
+
+.bolsa {
+  max-width: 900px;
+  margin: 24px auto 0;
+  background: #fff;
+  border-radius: var(--radio);
+  padding: 4px 20px 16px;
+}
+
+.lista-bolsa {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.lista-bolsa li {
+  background: var(--fondo);
+  border-radius: 20px;
+  padding: 4px 12px;
+}
+
+.gastado {
+  margin: 12px 0 0;
+  color: #4b5563;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 700px) {
+  .maquina {
+    grid-template-columns: 1fr;
+  }
+
+  .productos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

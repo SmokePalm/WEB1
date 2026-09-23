@@ -2,8 +2,14 @@
 
 const FILAS = ["A", "B", "C"];
 const COLUMNAS = ["1", "2", "3", "4"];
-const TECLAS = [...FILAS, "⌫", ...COLUMNAS, "OK"];
-const ATAJOS_TECLADO = { Enter: "OK", Backspace: "⌫" };
+// Cada tecla separa lo que se ve (etiqueta) de lo que hace (un carácter o una acción)
+const TECLAS = [
+  ...FILAS.map((fila) => ({ etiqueta: fila, caracter: fila })),
+  { etiqueta: "⌫", accion: "borrar", descripcion: "Borrar" },
+  ...COLUMNAS.map((columna) => ({ etiqueta: columna, caracter: columna })),
+  { etiqueta: "OK", accion: "comprar", descripcion: "Comprar" },
+];
+const ATAJOS_TECLADO = { Enter: "comprar", Backspace: "borrar", Escape: "cancelar" };
 
 const dom = {
   productos: document.querySelector("#productos"),
@@ -34,6 +40,30 @@ const estado = {
 
 // Guardamos cada tarjeta para actualizarla sin volver a pintar todo el escaparate
 const tarjetas = new Map();
+
+// ---------- Creación de nodos ----------
+
+function crearElemento(etiqueta, clase, texto) {
+  const nodo = document.createElement(etiqueta);
+  nodo.className = clase;
+  nodo.textContent = texto;
+  return nodo;
+}
+
+function crearBoton(clase, texto) {
+  const boton = crearElemento("button", clase, texto);
+  boton.type = "button";
+  return boton;
+}
+
+// Las monedas de 1 € y 2 € se pintan doradas
+function claseMoneda(valor) {
+  return valor >= 100 ? "moneda moneda-oro" : "moneda";
+}
+
+function crearMoneda(valor) {
+  return crearElemento("span", claseMoneda(valor), formatearMoneda(valor));
+}
 
 // ---------- Pintado ----------
 
@@ -66,18 +96,10 @@ function pintarProductos() {
   dom.productos.append(fragmento);
 }
 
-// Las monedas de 1 € y 2 € se pintan doradas
-function claseMoneda(valor) {
-  return valor >= 100 ? "moneda moneda-oro" : "moneda";
-}
-
 function pintarMonedas() {
   const botones = MONEDAS.map((valor) => {
-    const boton = document.createElement("button");
-    boton.type = "button";
-    boton.className = claseMoneda(valor);
+    const boton = crearBoton(claseMoneda(valor), formatearMoneda(valor));
     boton.dataset.valor = valor;
-    boton.textContent = formatearMoneda(valor);
     boton.setAttribute("aria-label", `Insertar ${formatearEuros(valor)}`);
     return boton;
   });
@@ -85,26 +107,22 @@ function pintarMonedas() {
 }
 
 function pintarTeclado() {
-  const botones = TECLAS.map((tecla) => {
-    const boton = document.createElement("button");
-    boton.type = "button";
-    boton.className = tecla === "OK" ? "tecla tecla-ok" : "tecla";
-    boton.dataset.tecla = tecla;
-    boton.textContent = tecla;
+  const botones = TECLAS.map(({ etiqueta, caracter, accion, descripcion }) => {
+    const boton = crearBoton("tecla", etiqueta);
+    if (accion === undefined) {
+      boton.dataset.caracter = caracter;
+    } else {
+      boton.dataset.accion = accion;
+      boton.setAttribute("aria-label", descripcion);
+    }
+    boton.classList.toggle("tecla-ok", accion === "comprar");
     return boton;
   });
   dom.teclado.append(...botones);
 }
 
-function crearMonedaCambio(valor) {
-  const moneda = document.createElement("span");
-  moneda.className = claseMoneda(valor);
-  moneda.textContent = formatearMoneda(valor);
-  return moneda;
-}
-
 function pintarCambio() {
-  dom.cambio.replaceChildren(...estado.cambio.map(crearMonedaCambio));
+  dom.cambio.replaceChildren(...estado.cambio.map(crearMoneda));
   dom.cambio.disabled = estado.cambio.length === 0;
 }
 
@@ -116,19 +134,15 @@ function pintarBandeja() {
     return;
   }
 
-  const emoji = document.createElement("span");
-  emoji.className = "bandeja-emoji";
-  emoji.textContent = producto.emoji;
+  const emoji = crearElemento("span", "bandeja-emoji", producto.emoji);
   dom.bandeja.replaceChildren(emoji, `${producto.nombre} · pulsa para recoger`);
   dom.bandeja.disabled = false;
 }
 
 function pintarBolsa() {
-  const articulos = estado.bolsa.map((producto) => {
-    const articulo = document.createElement("li");
-    articulo.textContent = `${producto.emoji} ${producto.nombre}`;
-    return articulo;
-  });
+  const articulos = estado.bolsa.map((producto) =>
+    crearElemento("li", "articulo-bolsa", `${producto.emoji} ${producto.nombre}`)
+  );
   dom.listaBolsa.replaceChildren(...articulos);
 
   const cantidad = estado.bolsa.length;
@@ -175,23 +189,19 @@ function describirCodigo() {
 }
 
 // El código es siempre una fila (letra) seguida de una columna (número)
-function pulsarTecla(tecla) {
-  if (tecla === "OK") {
-    comprar();
-    return;
-  }
-
-  if (tecla === "⌫") {
-    estado.codigo = estado.codigo.slice(0, -1);
-  } else if (estado.codigo.length === 0 && FILAS.includes(tecla)) {
-    estado.codigo = tecla;
-  } else if (estado.codigo.length === 1 && COLUMNAS.includes(tecla)) {
-    estado.codigo += tecla;
-  } else {
+function marcarCaracter(caracter) {
+  const esFila = estado.codigo.length === 0 && FILAS.includes(caracter);
+  const esColumna = estado.codigo.length === 1 && COLUMNAS.includes(caracter);
+  if (!esFila && !esColumna) {
     actualizarPantalla("Marca una letra y después un número", true);
     return;
   }
+  estado.codigo += caracter;
+  actualizarPantalla(describirCodigo());
+}
 
+function borrarCaracter() {
+  estado.codigo = estado.codigo.slice(0, -1);
   actualizarPantalla(describirCodigo());
 }
 
@@ -263,6 +273,13 @@ function recogerProducto() {
   actualizarPantalla(`${producto.nombre} guardado en tu bolsa`);
 }
 
+// Acciones que se pueden lanzar desde el teclado de la máquina o el del ordenador
+const ACCIONES = {
+  comprar,
+  borrar: borrarCaracter,
+  cancelar: cancelarOperacion,
+};
+
 // ---------- Eventos ----------
 
 // Delegación: un único listener para todas las monedas y otro para todo el teclado
@@ -275,8 +292,14 @@ dom.monedas.addEventListener("click", (evento) => {
 
 dom.teclado.addEventListener("click", (evento) => {
   const boton = evento.target.closest(".tecla");
-  if (boton !== null) {
-    pulsarTecla(boton.dataset.tecla);
+  if (boton === null) {
+    return;
+  }
+  const { accion, caracter } = boton.dataset;
+  if (accion === undefined) {
+    marcarCaracter(caracter);
+  } else {
+    ACCIONES[accion]();
   }
 });
 
@@ -290,15 +313,15 @@ document.addEventListener("keydown", (evento) => {
   if (evento.repeat || (evento.key === "Enter" && evento.target instanceof HTMLButtonElement)) {
     return;
   }
-  if (evento.key === "Escape") {
-    cancelarOperacion();
-    return;
-  }
 
-  const tecla = ATAJOS_TECLADO[evento.key] ?? evento.key.toUpperCase();
-  if (TECLAS.includes(tecla)) {
+  const accion = ATAJOS_TECLADO[evento.key];
+  const caracter = evento.key.toUpperCase();
+  if (accion !== undefined) {
     evento.preventDefault();
-    pulsarTecla(tecla);
+    ACCIONES[accion]();
+  } else if (FILAS.includes(caracter) || COLUMNAS.includes(caracter)) {
+    evento.preventDefault();
+    marcarCaracter(caracter);
   }
 });
 

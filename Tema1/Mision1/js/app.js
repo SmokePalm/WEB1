@@ -21,17 +21,19 @@ const dom = {
   gastado: document.querySelector("#gastado"),
 };
 
-// Copia de los productos para poder cambiar el stock sin tocar los datos originales
-const inventario = PRODUCTOS.map((producto) => ({ ...producto }));
+// Todo el estado de la máquina vive aquí. El DOM solo lo refleja, nunca se lee de él.
+const estado = {
+  // Copia de los productos para poder cambiar el stock sin tocar los datos originales
+  inventario: PRODUCTOS.map((producto) => ({ ...producto })),
+  saldo: 0,
+  codigo: "",
+  cambio: [],
+  productoEnBandeja: null,
+  bolsa: [],
+};
 
 // Guardamos cada tarjeta para actualizarla sin volver a pintar todo el escaparate
 const tarjetas = new Map();
-
-let saldo = 0;
-let codigo = "";
-let cambioPendiente = 0;
-let productoEnBandeja = null;
-let totalGastado = 0;
 
 // ---------- Pintado ----------
 
@@ -55,7 +57,7 @@ function actualizarTarjeta(producto) {
 
 function pintarProductos() {
   const fragmento = document.createDocumentFragment();
-  for (const producto of inventario) {
+  for (const producto of estado.inventario) {
     const tarjeta = crearTarjetaProducto(producto);
     tarjetas.set(producto.codigo, tarjeta);
     actualizarTarjeta(producto);
@@ -101,8 +103,14 @@ function crearMonedaCambio(valor) {
   return moneda;
 }
 
+function pintarCambio() {
+  dom.cambio.replaceChildren(...estado.cambio.map(crearMonedaCambio));
+  dom.cambio.disabled = estado.cambio.length === 0;
+}
+
 function pintarBandeja() {
-  if (productoEnBandeja === null) {
+  const producto = estado.productoEnBandeja;
+  if (producto === null) {
     dom.bandeja.textContent = "Bandeja vacía";
     dom.bandeja.disabled = true;
     return;
@@ -110,40 +118,60 @@ function pintarBandeja() {
 
   const emoji = document.createElement("span");
   emoji.className = "bandeja-emoji";
-  emoji.textContent = productoEnBandeja.emoji;
-  dom.bandeja.replaceChildren(emoji, `${productoEnBandeja.nombre} · pulsa para recoger`);
+  emoji.textContent = producto.emoji;
+  dom.bandeja.replaceChildren(emoji, `${producto.nombre} · pulsa para recoger`);
   dom.bandeja.disabled = false;
 }
 
-function pintarGastado() {
-  const cantidad = dom.listaBolsa.children.length;
+function pintarBolsa() {
+  const articulos = estado.bolsa.map((producto) => {
+    const articulo = document.createElement("li");
+    articulo.textContent = `${producto.emoji} ${producto.nombre}`;
+    return articulo;
+  });
+  dom.listaBolsa.replaceChildren(...articulos);
+
+  const cantidad = estado.bolsa.length;
+  if (cantidad === 0) {
+    dom.gastado.textContent = "Todavía no has comprado nada.";
+    return;
+  }
+  const gastado = sumar(estado.bolsa.map((producto) => producto.precio));
   const palabra = cantidad === 1 ? "producto" : "productos";
-  dom.gastado.textContent = `Has gastado ${formatearEuros(totalGastado)} en ${cantidad} ${palabra}.`;
+  dom.gastado.textContent = `Has gastado ${formatearEuros(gastado)} en ${cantidad} ${palabra}.`;
 }
 
-function mostrarMensaje(texto, esError = false) {
-  dom.mensaje.textContent = texto;
+// Pinta la pantalla completa: mensaje, saldo, código y producto seleccionado
+function actualizarPantalla(mensaje, esError = false) {
+  dom.mensaje.textContent = mensaje;
   dom.pantalla.classList.toggle("pantalla-error", esError);
-}
-
-function actualizarPantalla() {
-  dom.saldo.textContent = formatearEuros(saldo);
-  dom.codigo.textContent = codigo.padEnd(2, "-");
+  dom.saldo.textContent = formatearEuros(estado.saldo);
+  dom.codigo.textContent = estado.codigo.padEnd(2, "-");
   for (const [codigoTarjeta, tarjeta] of tarjetas) {
-    tarjeta.classList.toggle("producto-seleccionado", codigoTarjeta === codigo);
+    tarjeta.classList.toggle("producto-seleccionado", codigoTarjeta === estado.codigo);
   }
 }
 
 // ---------- Acciones ----------
 
-function buscarProducto(codigoBuscado) {
-  return inventario.find((producto) => producto.codigo === codigoBuscado);
+function buscarProducto(codigo) {
+  return estado.inventario.find((producto) => producto.codigo === codigo);
 }
 
 function insertarMoneda(valor) {
-  saldo += valor;
-  actualizarPantalla();
-  mostrarMensaje(`Has metido ${formatearEuros(valor)}`);
+  estado.saldo += valor;
+  actualizarPantalla(`Has metido ${formatearEuros(valor)}`);
+}
+
+function describirCodigo() {
+  if (estado.codigo === "") {
+    return "Marca una letra (A-C)";
+  }
+  if (estado.codigo.length === 1) {
+    return "Ahora marca un número (1-4)";
+  }
+  const producto = buscarProducto(estado.codigo);
+  return `${producto.nombre}: ${formatearEuros(producto.precio)}. Pulsa OK`;
 }
 
 // El código es siempre una fila (letra) seguida de una columna (número)
@@ -154,95 +182,85 @@ function pulsarTecla(tecla) {
   }
 
   if (tecla === "⌫") {
-    codigo = codigo.slice(0, -1);
-  } else if (codigo.length === 0 && FILAS.includes(tecla)) {
-    codigo = tecla;
-  } else if (codigo.length === 1 && COLUMNAS.includes(tecla)) {
-    codigo += tecla;
+    estado.codigo = estado.codigo.slice(0, -1);
+  } else if (estado.codigo.length === 0 && FILAS.includes(tecla)) {
+    estado.codigo = tecla;
+  } else if (estado.codigo.length === 1 && COLUMNAS.includes(tecla)) {
+    estado.codigo += tecla;
   } else {
-    mostrarMensaje("Marca una letra y después un número", true);
+    actualizarPantalla("Marca una letra y después un número", true);
     return;
   }
 
-  actualizarPantalla();
-  const producto = buscarProducto(codigo);
-  if (producto !== undefined) {
-    mostrarMensaje(`${producto.nombre}: ${formatearEuros(producto.precio)}. Pulsa OK`);
-  }
+  actualizarPantalla(describirCodigo());
 }
 
 function comprar() {
-  const producto = buscarProducto(codigo);
+  const producto = buscarProducto(estado.codigo);
 
   if (producto === undefined) {
-    mostrarMensaje("Marca un código completo, por ejemplo A1", true);
+    actualizarPantalla("Marca un código completo, por ejemplo A1", true);
     return;
   }
-  if (productoEnBandeja !== null) {
-    mostrarMensaje("Recoge primero el producto de la bandeja", true);
+  if (estado.productoEnBandeja !== null) {
+    actualizarPantalla("Recoge primero el producto de la bandeja", true);
     return;
   }
   if (producto.stock === 0) {
-    mostrarMensaje(`${producto.nombre}: agotado. Elige otro`, true);
+    actualizarPantalla(`${producto.nombre}: agotado. Elige otro`, true);
     return;
   }
-  if (saldo < producto.precio) {
-    mostrarMensaje(`Faltan ${formatearEuros(producto.precio - saldo)}`, true);
+  if (estado.saldo < producto.precio) {
+    actualizarPantalla(`Faltan ${formatearEuros(producto.precio - estado.saldo)}`, true);
     return;
   }
 
   producto.stock--;
-  saldo -= producto.precio;
-  totalGastado += producto.precio;
-  codigo = "";
-  productoEnBandeja = producto;
+  estado.saldo -= producto.precio;
+  estado.codigo = "";
+  estado.productoEnBandeja = producto;
+  const hayCambio = devolverSaldo();
 
   actualizarTarjeta(producto);
   pintarBandeja();
-  const hayCambio = devolverSaldo();
-  actualizarPantalla();
-  mostrarMensaje(`Aquí tienes: ${producto.nombre}${hayCambio ? ". Recoge tu cambio" : ""}`);
+  actualizarPantalla(`Aquí tienes: ${producto.nombre}${hayCambio ? ". Recoge tu cambio" : ""}`);
 }
 
 // Pasa el saldo a la bandeja de cambio en monedas. Devuelve si había algo que devolver.
 function devolverSaldo() {
-  if (saldo === 0) {
+  if (estado.saldo === 0) {
     return false;
   }
-  dom.cambio.append(...calcularCambio(saldo).map(crearMonedaCambio));
-  dom.cambio.disabled = false;
-  cambioPendiente += saldo;
-  saldo = 0;
+  estado.cambio.push(...calcularCambio(estado.saldo));
+  estado.saldo = 0;
+  pintarCambio();
   return true;
 }
 
 function cancelarOperacion() {
-  codigo = "";
+  estado.codigo = "";
   const hayCambio = devolverSaldo();
-  actualizarPantalla();
   if (hayCambio) {
-    mostrarMensaje("Operación cancelada. Recoge tu dinero");
+    actualizarPantalla("Operación cancelada. Recoge tu dinero");
   } else {
-    mostrarMensaje("No hay dinero que devolver", true);
+    actualizarPantalla("No hay dinero que devolver", true);
   }
 }
 
 function recogerCambio() {
-  mostrarMensaje(`Has recogido ${formatearEuros(cambioPendiente)} de cambio`);
-  cambioPendiente = 0;
-  dom.cambio.replaceChildren();
-  dom.cambio.disabled = true;
+  const recogido = sumar(estado.cambio);
+  estado.cambio = [];
+  pintarCambio();
+  actualizarPantalla(`Has recogido ${formatearEuros(recogido)} de cambio`);
 }
 
 function recogerProducto() {
-  const articulo = document.createElement("li");
-  articulo.textContent = `${productoEnBandeja.emoji} ${productoEnBandeja.nombre}`;
-  dom.listaBolsa.append(articulo);
-
-  mostrarMensaje(`${productoEnBandeja.nombre} guardado en tu bolsa`);
-  productoEnBandeja = null;
+  const producto = estado.productoEnBandeja;
+  estado.bolsa.push(producto);
+  estado.productoEnBandeja = null;
   pintarBandeja();
-  pintarGastado();
+  pintarBolsa();
+  actualizarPantalla(`${producto.nombre} guardado en tu bolsa`);
 }
 
 // ---------- Eventos ----------
@@ -261,7 +279,6 @@ dom.teclado.addEventListener("click", (evento) => {
     pulsarTecla(boton.dataset.tecla);
   }
 });
-
 
 dom.botonDevolver.addEventListener("click", cancelarOperacion);
 dom.cambio.addEventListener("click", recogerCambio);
@@ -290,4 +307,7 @@ document.addEventListener("keydown", (evento) => {
 pintarProductos();
 pintarMonedas();
 pintarTeclado();
-actualizarPantalla();
+pintarCambio();
+pintarBandeja();
+pintarBolsa();
+actualizarPantalla("Inserta monedas");

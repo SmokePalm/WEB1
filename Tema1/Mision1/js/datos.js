@@ -29,6 +29,10 @@ function formatearMoneda(centimos) {
   return centimos >= 100 ? `${centimos / 100} €` : `${centimos} c`;
 }
 
+function sumar(importes) {
+  return importes.reduce((total, importe) => total + importe, 0);
+}
+
 // Devuelve las monedas del cambio empezando por la más grande: 85 -> [50, 20, 10, 5]
 function calcularCambio(importe) {
   const cambio = [];

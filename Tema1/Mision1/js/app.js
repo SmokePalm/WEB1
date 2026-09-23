@@ -3,6 +3,7 @@
 const FILAS = ["A", "B", "C"];
 const COLUMNAS = ["1", "2", "3", "4"];
 const TECLAS = [...FILAS, "⌫", ...COLUMNAS, "OK"];
+const ATAJOS_TECLADO = { Enter: "OK", Backspace: "⌫" };
 
 const dom = {
   productos: document.querySelector("#productos"),
@@ -13,6 +14,11 @@ const dom = {
   codigo: document.querySelector("#codigo"),
   teclado: document.querySelector("#teclado"),
   monedas: document.querySelector("#monedas"),
+  botonDevolver: document.querySelector("#boton-devolver"),
+  cambio: document.querySelector("#cambio"),
+  bandeja: document.querySelector("#bandeja"),
+  listaBolsa: document.querySelector("#lista-bolsa"),
+  gastado: document.querySelector("#gastado"),
 };
 
 // Copia de los productos para poder cambiar el stock sin tocar los datos originales
@@ -23,6 +29,9 @@ const tarjetas = new Map();
 
 let saldo = 0;
 let codigo = "";
+let cambioPendiente = 0;
+let productoEnBandeja = null;
+let totalGastado = 0;
 
 // ---------- Pintado ----------
 
@@ -85,6 +94,33 @@ function pintarTeclado() {
   dom.teclado.append(...botones);
 }
 
+function crearMonedaCambio(valor) {
+  const moneda = document.createElement("span");
+  moneda.className = claseMoneda(valor);
+  moneda.textContent = formatearMoneda(valor);
+  return moneda;
+}
+
+function pintarBandeja() {
+  if (productoEnBandeja === null) {
+    dom.bandeja.textContent = "Bandeja vacía";
+    dom.bandeja.disabled = true;
+    return;
+  }
+
+  const emoji = document.createElement("span");
+  emoji.className = "bandeja-emoji";
+  emoji.textContent = productoEnBandeja.emoji;
+  dom.bandeja.replaceChildren(emoji, `${productoEnBandeja.nombre} · pulsa para recoger`);
+  dom.bandeja.disabled = false;
+}
+
+function pintarGastado() {
+  const cantidad = dom.listaBolsa.children.length;
+  const palabra = cantidad === 1 ? "producto" : "productos";
+  dom.gastado.textContent = `Has gastado ${formatearEuros(totalGastado)} en ${cantidad} ${palabra}.`;
+}
+
 function mostrarMensaje(texto, esError = false) {
   dom.mensaje.textContent = texto;
   dom.pantalla.classList.toggle("pantalla-error", esError);
@@ -142,6 +178,10 @@ function comprar() {
     mostrarMensaje("Marca un código completo, por ejemplo A1", true);
     return;
   }
+  if (productoEnBandeja !== null) {
+    mostrarMensaje("Recoge primero el producto de la bandeja", true);
+    return;
+  }
   if (producto.stock === 0) {
     mostrarMensaje(`${producto.nombre}: agotado. Elige otro`, true);
     return;
@@ -153,10 +193,56 @@ function comprar() {
 
   producto.stock--;
   saldo -= producto.precio;
+  totalGastado += producto.precio;
   codigo = "";
+  productoEnBandeja = producto;
+
   actualizarTarjeta(producto);
+  pintarBandeja();
+  const hayCambio = devolverSaldo();
   actualizarPantalla();
-  mostrarMensaje(`Aquí tienes: ${producto.nombre}`);
+  mostrarMensaje(`Aquí tienes: ${producto.nombre}${hayCambio ? ". Recoge tu cambio" : ""}`);
+}
+
+// Pasa el saldo a la bandeja de cambio en monedas. Devuelve si había algo que devolver.
+function devolverSaldo() {
+  if (saldo === 0) {
+    return false;
+  }
+  dom.cambio.append(...calcularCambio(saldo).map(crearMonedaCambio));
+  dom.cambio.disabled = false;
+  cambioPendiente += saldo;
+  saldo = 0;
+  return true;
+}
+
+function cancelarOperacion() {
+  codigo = "";
+  const hayCambio = devolverSaldo();
+  actualizarPantalla();
+  if (hayCambio) {
+    mostrarMensaje("Operación cancelada. Recoge tu dinero");
+  } else {
+    mostrarMensaje("No hay dinero que devolver", true);
+  }
+}
+
+function recogerCambio() {
+  mostrarMensaje(`Has recogido ${formatearEuros(cambioPendiente)} de cambio`);
+  cambioPendiente = 0;
+  dom.cambio.replaceChildren();
+  dom.cambio.disabled = true;
+}
+
+function recogerProducto() {
+  const articulo = document.createElement("li");
+  articulo.textContent = `${productoEnBandeja.emoji} ${productoEnBandeja.nombre}`;
+  dom.listaBolsa.append(articulo);
+
+  mostrarMensaje(`${productoEnBandeja.nombre} guardado en tu bolsa`);
+  productoEnBandeja = null;
+  pintarBandeja();
+  pintarGastado();
 }
 
 // ---------- Eventos ----------
@@ -173,6 +259,29 @@ dom.teclado.addEventListener("click", (evento) => {
   const boton = evento.target.closest(".tecla");
   if (boton !== null) {
     pulsarTecla(boton.dataset.tecla);
+  }
+});
+
+
+dom.botonDevolver.addEventListener("click", cancelarOperacion);
+dom.cambio.addEventListener("click", recogerCambio);
+dom.bandeja.addEventListener("click", recogerProducto);
+
+// Atajos: A-C y 1-4 marcan el código, Enter = OK, Retroceso = borrar, Escape = devolver
+document.addEventListener("keydown", (evento) => {
+  // Enter sobre un botón con el foco debe pulsar ese botón, no comprar
+  if (evento.repeat || (evento.key === "Enter" && evento.target instanceof HTMLButtonElement)) {
+    return;
+  }
+  if (evento.key === "Escape") {
+    cancelarOperacion();
+    return;
+  }
+
+  const tecla = ATAJOS_TECLADO[evento.key] ?? evento.key.toUpperCase();
+  if (TECLAS.includes(tecla)) {
+    evento.preventDefault();
+    pulsarTecla(tecla);
   }
 });
 

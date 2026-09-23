@@ -64,6 +64,21 @@ button:disabled {
   margin: 8px 0 0;
 }
 
+.atajos {
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+kbd {
+  background: #fff;
+  border: 1px solid #c3c8d0;
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  padding: 0 5px;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+
 /* ---------- Máquina ---------- */
 
 .maquina {

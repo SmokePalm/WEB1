@@ -79,8 +79,14 @@ WEB1/
 > «Voy a construir un simulador de máquina expendedora en el directorio Mision1 con HTML, CSS y JavaScript puro, sin frameworks ni librerías.» (junto con el enunciado y la rúbrica de la misión)
 
 
+> «Revisa mi index.html, styles.css y app.js como si fueras el profesor que va a corregirlos con esta rúbrica: DOM 20, eventos 15, fundamentos JS 15, calidad 10, originalidad 10. Dime los tres puntos más débiles y por qué, sin arreglarlos todavía — quiero intentarlo yo primero.»
+
 **Cómo verifiqué lo generado:**
 
+- Le pedí a la IA que revisara el código como si fuera el profesor. Encontró tres puntos débiles, que después también arregló la IA en tres commits separados:
+  1. El atajo de teclado global capturaba **Ctrl+C** y **Ctrl+A**: marcaba la fila C o A e impedía copiar. Además, **Esc** mostraba un error aunque no hubiera nada que cancelar.
+  2. El estado estaba repartido en cinco variables sueltas, y el número de productos comprados se leía del DOM. Ahora todo vive en un único objeto `estado` y el DOM solo lo refleja.
+  3. La creación de botones y elementos estaba repetida, y el texto de las teclas (`OK`, `⌫`) se usaba también como identificador de la acción. Ahora hay helpers `crearElemento`/`crearBoton`, y cada tecla separa `etiqueta` y `accion`.
 - Se probaron todos los flujos en un navegador simulado (jsdom): compra con cambio exacto, saldo insuficiente, producto agotado, bandeja ocupada, cancelar y atajos de teclado. Esa prueba encontró un error real: la tecla `Enter` fallaba si no había ningún botón con el foco. Se corrigió antes de subirlo.
 - Se buscó en el código que no hubiera `var`, `innerHTML`, `onclick` ni `console.log`, que son cosas que bajan la nota.
 - Revisé el código para entender cada función, sobre todo el cálculo del cambio, la delegación de eventos y por qué se trabaja en céntimos.

@@ -1,0 +1,15 @@
+{
+  "name": "que-cocino",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Dime qué tienes en la nevera y te digo qué puedes cocinar (TheMealDB).",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.3.3"
+  }
+}

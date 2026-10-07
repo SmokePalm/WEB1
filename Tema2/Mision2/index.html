@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Dime qué tienes en la nevera y te digo qué puedes cocinar." />
+    <title>¿Qué cocino?</title>
+  </head>
+  <body>
+    <header class="cabecera">
+      <h1>¿Qué cocino?</h1>
+      <p>Dime qué tienes en la nevera y te digo qué puedes cocinar con ello.</p>
+    </header>
+
+    <main>
+      <section class="nevera" aria-labelledby="titulo-nevera">
+        <h2 id="titulo-nevera">Tu nevera</h2>
+
+        <form id="formulario" class="formulario" autocomplete="off">
+          <label for="ingrediente">Ingrediente (en inglés, la API no habla otro idioma)</label>
+          <div class="formulario__fila">
+            <input
+              id="ingrediente"
+              name="ingrediente"
+              type="text"
+              list="sugerencias"
+              placeholder="chicken, rice, egg…"
+              maxlength="40"
+              required
+            />
+            <button type="submit">Añadir</button>
+          </div>
+          <datalist id="sugerencias"></datalist>
+          <p id="aviso-formulario" class="formulario__aviso" role="alert"></p>
+        </form>
+
+        <ul id="nevera" class="imanes" aria-label="Ingredientes en tu nevera"></ul>
+      </section>
+
+      <section class="resultados" aria-labelledby="titulo-resultados">
+        <h2 id="titulo-resultados">Recetas</h2>
+        <div id="cocinas" class="cocinas" role="group" aria-label="Filtrar por cocina"></div>
+        <div id="resultados" aria-live="polite"></div>
+      </section>
+    </main>
+
+    <footer class="pie">
+      <p>Datos de <a href="https://www.themealdb.com/" target="_blank" rel="noopener">TheMealDB</a>.</p>
+    </footer>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

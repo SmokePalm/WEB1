@@ -102,3 +102,98 @@ WEB1/
 **2. El cambio se calcula con un algoritmo voraz y suponiendo monedas infinitas.**
 `calcularCambio` siempre usa la moneda más grande que cabe. Con las monedas de euro (2 €, 1 €, 50 c, 20 c, 10 c, 5 c) eso da siempre el mínimo de monedas, y como todos los precios son múltiplos de 5 céntimos el cambio siempre es exacto. Lo discutible es que la máquina nunca se queda sin monedas, cosa que en una máquina real sí pasa.
 *Alternativa descartada:* llevar un inventario de monedas dentro de la máquina (las que mete el usuario se suman y las del cambio se restan) y negarse a vender si no puede dar el cambio exacto. Es más realista, pero complica bastante la lógica: habría que buscar combinaciones cuando la voraz falla. Preferí mantener el código simple y fácil de explicar.
+
+---
+
+# 🧊 ¿Qué cocino?
+
+Aplicación que te dice qué puedes cocinar con lo que tienes en la nevera. Escribes tus ingredientes y busca recetas reales en la API pública [TheMealDB](https://www.themealdb.com/), ordenadas por cuántos de tus ingredientes aprovechan.
+
+Hecha con **JavaScript puro y Vite**, sin frameworks. El proyecto está en [`Tema2/Mision2/`](Tema2/Mision2/).
+
+## Descripción
+
+- Añades hasta 6 ingredientes, que aparecen como imanes pegados en la nevera. La API solo entiende **inglés** (`chicken`, `rice`, `egg`…); el campo sugiere los nombres válidos mientras escribes.
+- Cada vez que cambia la nevera se lanza una búsqueda nueva. Primero salen las recetas que usan más ingredientes tuyos.
+- Cada tarjeta dice qué ingredientes tuyos usa y cuántos te faltan. Al desplegarla se ven la lista completa (con los que ya tienes marcados), los pasos y el enlace al vídeo.
+- Puedes filtrar los resultados por tipo de cocina.
+- La nevera se guarda en `localStorage`, así que sigue ahí al recargar.
+
+## Cómo ejecutarlo
+
+Hace falta [Node.js](https://nodejs.org/) (20.19 o superior).
+
+```bash
+cd Tema2/Mision2
+npm install
+npm run dev      # servidor de desarrollo en http://localhost:5173
+```
+
+Para generar la versión de producción: `npm run build` (sale en `dist/`) y `npm run preview` para probarla.
+
+## Estructura del proyecto
+
+```
+Tema2/Mision2/
+├── index.html          # Estructura de la página
+├── package.json        # Scripts y dependencias (solo Vite)
+└── src/
+    ├── main.js         # Estado, eventos y decidir qué se pinta
+    ├── api.js          # fetch a TheMealDB y traducción de errores
+    ├── buscador.js     # Orquesta las peticiones: de una nevera a una lista de recetas
+    ├── recetas.js      # Lógica pura: combinar, ordenar, limpiar y filtrar los datos
+    ├── render.js       # Todo lo que toca el DOM
+    ├── almacen.js      # Guardar y leer la nevera en localStorage
+    └── styles.css
+```
+
+Cada módulo tiene una sola responsabilidad: `api.js` no sabe nada del DOM, `render.js` no hace peticiones y `recetas.js` no hace ninguna de las dos cosas (solo recibe datos y devuelve datos nuevos).
+
+## Cómo funciona
+
+### Asincronía
+
+La búsqueda (`buscador.js`) tiene dos pasos:
+
+1. **Una petición por ingrediente, todas a la vez.** Son independientes, así que se lanzan en paralelo con `Promise.allSettled`.
+2. **El detalle de las 12 mejores recetas, también en paralelo.** Este paso sí depende del primero (hacen falta los `id`), por eso va después con `await`.
+
+Se usa `allSettled` y no `all` para que un fallo aislado no tire toda la búsqueda: si falla un ingrediente se avisa y se sigue con los demás, y si falla el detalle de una receta su tarjeta sale igualmente, sin la parte desplegable.
+
+Si cambias la nevera mientras hay una búsqueda en marcha, la anterior se cancela con `AbortController`. Así una respuesta antigua que llegue tarde no pisa a la nueva. Además, cada petición tiene un tiempo máximo de 10 segundos.
+
+### Estados que ve el usuario
+
+| Estado | Qué se ve |
+| --- | --- |
+| Inicio | Mensaje para que añadas el primer ingrediente |
+| Cargando | Tarjetas grises que laten y el texto «Buscando recetas con…» |
+| Error | El motivo en lenguaje normal (sin conexión, la API tarda, error HTTP…) y un botón **Reintentar** |
+| Vacío | Aviso de que no hay recetas con esos ingredientes |
+| Datos | Las tarjetas, más avisos si algún ingrediente ha fallado o no tiene recetas |
+
+### Transformación de datos
+
+Los datos de la API no se pintan tal cual llegan, se transforman antes con métodos de array (no hay ningún bucle `for`):
+
+- `flatMap` + `reduce` sobre un `Map` para juntar las respuestas de todos los ingredientes en una sola lista sin repetidos, apuntando qué ingredientes han encontrado cada receta.
+- `toSorted` para ordenar por número de coincidencias sin mutar el array.
+- `Array.from` + `filter` para convertir los 40 campos sueltos de la API (`strIngredient1…20` y `strMeasure1…20`) en una lista de ingredientes de verdad.
+- `Object.groupBy` para contar las recetas de cada tipo de cocina, y `filter` para filtrar por ella.
+- `Set` para quitar duplicados.
+
+### Robustez
+
+Casos que se han probado y que no rompen la aplicación:
+
+- **Sin resultados**: la API devuelve `{ "meals": null }`, no un array vacío.
+- **`id` inexistente**: devuelve `{ "meals": "Invalid ID" }` (un texto donde debería ir un array).
+- **Errores de red, HTTP 500 y respuestas que no son JSON**: se comprueba `response.ok` y todo va dentro de `try/catch`.
+- **Datos raros**: recetas sin nombre, sin foto, sin instrucciones o sin ingredientes; huecos con `""`, `" "` o `null`; nombres con espacios de sobra.
+- **Enlaces**: solo se aceptan URL `http(s)` antes de ponerlas en un `href` o un `src`.
+- **`localStorage` corrupto** o no disponible: se arranca con la nevera vacía.
+- **Texto de la API**: se pinta siempre con `textContent`, nunca con `innerHTML`.
+
+## Uso de IA
+
+_Pendiente de redactar._

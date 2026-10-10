@@ -196,4 +196,42 @@ Casos que se han probado y que no rompen la aplicación:
 
 ## Uso de IA
 
-_Pendiente de redactar._
+**Herramienta:** Claude Code (modelo Claude Opus 5.5), usado desde la extensión de VS Code.
+
+**Qué partes hice con IA:** la IA generó el código del proyecto: el HTML, el CSS, los seis módulos JavaScript y este README. Mi trabajo fue definir qué quería, elegir la idea y dirigir los cambios:
+
+- Elegí la idea de la nevera y la API TheMealDB por originalidad, en lugar de usar la PokéAPI, que es la opción más habitual para este tipo de ejercicio.
+- Le pedí que el estado de error tuviera un botón **Reintentar**, para poder repetir la búsqueda sin tener que tocar la nevera ni recargar la página.
+- Le pedí que el trabajo se subiera en varios commits pequeños, uno por cada paso (proyecto, API, lógica, buscador, render, eventos), y no en uno solo.
+
+**Prompts reales relevantes:**
+
+> «Crea una aplicación (con Vite) que consuma una API pública TheMealDB usando fetch + async/await, módulos ES y métodos de array. Renderiza los datos en el DOM con estados de carga y error.»
+
+> «Explícame el funcionamiento de buscador.js y déjame tres preguntas como si fueras mi profesor para prepararme bien la defensa.»
+
+**Cómo verifiqué lo generado:**
+
+- Arranqué el proyecto con `npm run dev` y probé a mano en el navegador, con las DevTools abiertas:
+  - **Red lenta** (Network en «Slow 3G»): mientras llegan las respuestas se ven las tarjetas grises de carga y el texto «Buscando recetas con…».
+  - **Ingrediente inventado**: sale el aviso de que no hay ninguna receta con eso, en lugar de una lista vacía o un error.
+  - **Recargar la página**: la nevera sigue con los ingredientes que tenía, porque se guarda en `localStorage`.
+  - **Cambiar la nevera rápido**: al añadir dos ingredientes seguidos solo aparecen los resultados de la última búsqueda; la anterior se cancela.
+- Le pedí a la IA que me explicara `buscador.js` y me hiciera preguntas como si fuera el profesor, para comprobar que entendía el código antes de defenderlo.
+- Revisé el código para entender cada módulo, sobre todo los dos pasos de `buscador.js`, por qué se usa `allSettled` y cómo se cancela una búsqueda con `AbortController`.
+
+**Qué escribí a mano:** los prompts y las decisiones, tanto las del proyecto (la idea, la API y qué tenía que hacer la aplicación) como las de diseño. El código no lo tecleé yo.
+
+## Autopsia
+
+**1. Una petición por ingrediente y el cruce se hace en el cliente.**
+`buscarRecetas` lanza una petición a `filter.php` por cada ingrediente de la nevera y después `combinarResultados` junta las respuestas y cuenta cuántos ingredientes comparte cada receta. Lo discutible es el coste: con 6 ingredientes y 12 detalles, una sola búsqueda son hasta 18 peticiones.
+*Alternativa descartada:* el filtro por varios ingredientes a la vez de TheMealDB (`filter.php?i=chicken,rice`), que lo resuelve en una petición. Solo está disponible en la versión de pago de la API, y además devuelve únicamente las recetas que tienen todos los ingredientes, así que no serviría para ordenar por «cuántos aprovechas».
+
+**2. El detalle de las 12 mejores recetas se pide por adelantado.**
+Después del primer paso se piden los 12 detalles en paralelo, aunque el usuario quizá no despliegue ninguna tarjeta. Lo discutible es que se gastan peticiones en datos que puede que no se lean, y que el filtro por cocina solo ve esas 12 recetas y no todas las encontradas.
+*Alternativa descartada:* pedir el detalle al desplegar cada tarjeta. Ahorra peticiones, pero la respuesta de `filter.php` solo trae nombre y foto: sin el detalle no se puede mostrar «te faltan N ingredientes» ni el tipo de cocina en la tarjeta cerrada, que es justo lo que ayuda a elegir.
+
+**3. Los ingredientes se comparan por igualdad, con un singular muy simple.**
+Para marcar qué ingredientes de la receta ya tienes, `esElMismo` compara los nombres tal cual y solo iguala plurales (`egg` y `eggs`). Lo discutible es que se queda corto: con `chicken` en la nevera, `chicken breast` aparece como ingrediente que te falta.
+*Alternativa descartada:* comprobar si un nombre contiene al otro. Marcaría `chicken breast`, pero daría falsos positivos peores, como `egg` dentro de `eggplant` o `rice` dentro de `rice vinegar`. Preferí que la app se equivoque diciendo que te falta algo antes que diciendo que tienes algo que no tienes.

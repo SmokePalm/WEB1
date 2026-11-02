@@ -374,10 +374,24 @@ La búsqueda se memoriza con `useMemo(…, [nevera])` para que la función solo 
 
 > «Créame aquí la misión 3, crea un directorio llamado Tema3 que dentro esté otro llamado Mision3 y ahí lo haces.» (junto con el enunciado y la rúbrica de la misión)
 
-> «Tienes que ir haciendo commits según vas haciendo el código, mínimo 5, hazlo igual que las anteriores, y modifica el README y añade lo de esta misión.»
+> «Dime cómo correr la web y qué tengo que comprobar a mano en el navegador.»
+
+> «Explícame las partes de la web que no entiendo.»
 
 **Cómo verifiqué lo generado:**
 
+- Arranqué el proyecto con `npm run dev` y probé a mano en el navegador, con las DevTools abiertas y la consola a la vista:
+  - **Formulario**: con el campo vacío sale «Escribe un ingrediente.», un ingrediente repetido avisa de que ya lo tengo y el aviso se borra al volver a escribir. Las sugerencias aparecen mientras escribo y el contador sube (`1/6`, `2/6`…).
+  - **Red lenta** (Network en «Slow 4G»): mientras llegan las respuestas se ven las tarjetas grises latiendo y el texto «Buscando recetas con…».
+  - **Resultados**: primero salen las recetas que usan más ingredientes míos, y al desplegar una tarjeta los ingredientes que ya tengo salen en verde con ✓.
+  - **Filtro por cocina**: al pulsar una cocina solo quedan sus recetas, y al cambiar la nevera el filtro vuelve solo a «Todas».
+  - **Cambiar la nevera rápido**: al añadir dos ingredientes seguidos solo aparecen los resultados de la última búsqueda; la anterior se cancela.
+  - **Ingrediente inventado** (`zzzz`): sale el mensaje de que no hay ninguna receta con eso.
+  - **Sin conexión** (Network en «Offline»): sale el error con el botón **Reintentar**, y al volver la red ese botón recupera las recetas.
+  - **Límite**: con 6 ingredientes no deja meter un séptimo.
+  - **Recargar la página**: la nevera sigue con los ingredientes que tenía.
+  - En la consola no salió ningún error en ninguna de las pruebas.
+- Le pedí a la IA que me explicara las partes que no entendía, para poder defender el código.
 - `npm run lint` (con las reglas de los hooks de React, que avisan de dependencias mal puestas en los efectos o de `setState` dentro de un efecto) y `npm run build` (que pasa `tsc` en modo estricto) terminan sin errores ni avisos.
 - Se probaron todos los flujos en Chrome contra la API real: estado de inicio, aviso con el campo vacío, ingrediente duplicado, límite de 6, cambiar la nevera rápido (solo se ven los resultados de la última búsqueda), filtro por cocina, detalle de la receta, recargar la página (la nevera sigue y el filtro vuelve a «Todas»), ingrediente inventado (mensaje de vacío) y red cortada (mensaje de error y **Reintentar**). No salió ningún error en la consola.
 

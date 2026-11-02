@@ -235,3 +235,164 @@ Después del primer paso se piden los 12 detalles en paralelo, aunque el usuario
 **3. Los ingredientes se comparan por igualdad, con un singular muy simple.**
 Para marcar qué ingredientes de la receta ya tienes, `esElMismo` compara los nombres tal cual y solo iguala plurales (`egg` y `eggs`). Lo discutible es que se queda corto: con `chicken` en la nevera, `chicken breast` aparece como ingrediente que te falta.
 *Alternativa descartada:* comprobar si un nombre contiene al otro. Marcaría `chicken breast`, pero daría falsos positivos peores, como `egg` dentro de `eggplant` o `rice` dentro de `rice vinegar`. Preferí que la app se equivoque diciendo que te falta algo antes que diciendo que tienes algo que no tienes.
+
+---
+
+# ⚛️ ¿Qué cocino? en React
+
+La misma aplicación de la misión anterior, reconstruida en **React 19 con TypeScript y Vite**. Hace lo mismo (buscar recetas en [TheMealDB](https://www.themealdb.com/) con los ingredientes de tu nevera), pero ahora la interfaz sale del estado: ya no hay funciones `pintarX` que tocan el DOM a mano.
+
+El proyecto está en [`Tema3/Mision3/`](Tema3/Mision3/).
+
+## Descripción
+
+- Igual que antes: hasta 6 ingredientes como imanes en la nevera, sugerencias en inglés mientras escribes, recetas ordenadas por cuántos ingredientes tuyos usan, detalle desplegable y filtro por tipo de cocina.
+- **Novedades:** un contador `N/6` al lado del título de la nevera y un botón **Vaciar** para quitarlo todo de golpe.
+- La nevera se sigue guardando en `localStorage`.
+
+## Cómo ejecutarlo
+
+Hace falta [Node.js](https://nodejs.org/) (20.19 o superior).
+
+```bash
+cd Tema3/Mision3
+npm install
+npm run dev      # servidor de desarrollo en http://localhost:5173
+npm run lint     # ESLint con las reglas de los hooks de React
+npm run build    # comprueba los tipos (tsc) y genera dist/
+```
+
+## Estructura del proyecto
+
+```
+Tema3/Mision3/
+├── index.html
+├── package.json
+└── src/
+    ├── main.tsx                 # Monta <App /> en #root
+    ├── App.tsx                  # Estado de la nevera y las dos peticiones
+    ├── styles.css
+    ├── hooks/
+    │   ├── usePeticion.ts       # Petición cancelable: cargando / error / lista + reintentar
+    │   └── useLocalStorage.ts   # useState que sobrevive a recargar la página
+    ├── lib/                     # Lógica sin React (la de la Misión 2 pasada a TypeScript)
+    │   ├── api.ts
+    │   ├── buscador.ts
+    │   ├── recetas.ts
+    │   └── tipos.ts
+    └── components/
+        ├── Nevera.tsx               # Sección de la nevera: título, contador y vaciar
+        ├── FormularioIngrediente.tsx
+        ├── Iman.tsx
+        ├── Resultados.tsx           # Elige qué estado se ve
+        ├── Cargando.tsx
+        ├── Mensaje.tsx              # Caja de inicio, error y vacío
+        ├── Avisos.tsx
+        ├── Recetario.tsx            # Filtro + lista de tarjetas
+        ├── FiltroCocinas.tsx
+        ├── TarjetaReceta.tsx
+        ├── FotoReceta.tsx
+        └── DetalleReceta.tsx
+```
+
+## Cómo funciona
+
+### Componentes
+
+```
+App
+├── Nevera
+│   ├── FormularioIngrediente
+│   └── Iman ×N
+└── Resultados
+    ├── Mensaje            (inicio, error o vacío)
+    ├── Cargando
+    └── Recetario
+        ├── FiltroCocinas
+        ├── Avisos
+        └── TarjetaReceta ×N
+            ├── FotoReceta
+            └── DetalleReceta
+```
+
+- Los componentes reciben **datos y callbacks** por props (`onAnadir`, `onQuitar`, `onCambiar`, `onReintentar`) y no saben de dónde salen. `Iman` no sabe que existe una nevera: solo avisa de que le han pulsado la ×.
+- `Mensaje` se reutiliza para las tres cajas (inicio, error y vacío) usando `children`, y `Avisos` se usa tanto dentro del mensaje de vacío como encima de las tarjetas.
+- Todas las props están tipadas con TypeScript. `DetalleReceta` usa `Pick<Receta, …>` para recibir solo los campos que necesita.
+
+### Estado: lo mínimo, el resto se deriva
+
+El único estado «de verdad» de la app es **la nevera** (un array de textos). Todo lo demás se calcula en cada render:
+
+| Valor | De dónde sale |
+| --- | --- |
+| Si la búsqueda está cargando | La última respuesta no corresponde a la búsqueda actual |
+| Recetas visibles | `filtrarPorCocina(recetas, cocina)` |
+| Botones del filtro y sus números | `contarPorCocina(recetas)` |
+| Avisos («Ninguna receta usa…») | Los `fallidos` y `sinRecetas` del resultado |
+| Contador `3/6` y botón Vaciar | `ingredientes.length` |
+
+Solo hay estado local donde hace falta: el texto y el aviso del formulario (input controlado), la cocina elegida en `Recetario` y si una foto ha fallado en `FotoReceta`.
+
+Las actualizaciones nunca mutan: `[...actual, ingrediente]` para añadir y `filter` para quitar, siempre con la forma de función `setNevera((actual) => …)`.
+
+### Efectos: solo dos
+
+1. **La petición** (`usePeticion`): se lanza cuando cambia la tarea. En la limpieza del efecto se hace `abort()`, así que si cambias la nevera mientras carga, la búsqueda vieja se cancela y su respuesta no pisa a la nueva. El efecto solo llama a `setState` cuando llega la respuesta, nunca de forma síncrona.
+2. **Guardar en `localStorage`** (`useLocalStorage`): depende de `[clave, valor]`.
+
+Los dos sincronizan React con algo de fuera (la red y el almacenamiento del navegador), que es justo para lo que sirven los efectos. Lo que **no** se hace con efectos:
+
+- **Reiniciar el filtro a «Todas»** en cada búsqueda nueva: `Recetario` solo se monta cuando hay recetas, y en cada búsqueda se pasa por «cargando», así que se desmonta y vuelve a montarse con su estado inicial.
+- **Leer `localStorage` al arrancar**: se hace con inicialización perezosa, `useState(() => …)`.
+- **Calcular el filtro o los avisos**: se derivan en el render.
+
+La búsqueda se memoriza con `useMemo(…, [nevera])` para que la función solo cambie cuando cambia la nevera. Si no, sería una función nueva en cada render y el efecto se dispararía sin parar.
+
+### Listas y condicionales
+
+- Todas las listas usan una **key estable** sacada de los datos, nunca el índice: el nombre del ingrediente en los imanes (la nevera no admite repetidos), el `id` de la receta en las tarjetas, el nombre en las cocinas y las sugerencias, el hueco `1…20` de la API en los ingredientes de la receta y el número de paso en las instrucciones.
+- `Resultados` decide qué se ve con un `switch` sobre el estado de la petición (`inactiva`, `cargando`, `error`, `lista`). Como es una unión discriminada de TypeScript, solo se puede leer `datos` en el caso `lista` y `error` en el caso `error`.
+- Las condiciones con `&&` comparan siempre con un booleano (`ingredientes.length > 0 && …`) para que React no pinte un `0` suelto.
+- `FiltroCocinas` devuelve `null` si solo hay una cocina, porque no hay nada que filtrar.
+
+### ★ Bonus: custom hooks
+
+- **`usePeticion(tarea)`**: un `useFetch` genérico. Recibe una función `(signal) => Promise<T>` y devuelve `{ estado, datos | error, reintentar }`. Se usa **dos veces**: para las recetas y para las sugerencias del campo.
+- **`useLocalStorage(clave, leer)`**: igual que `useState`, pero guarda el valor. La función `leer` valida lo guardado, porque en `localStorage` puede haber cualquier cosa.
+
+## Uso de IA
+
+**Herramienta:** Claude Code (modelo Claude Opus 5.5), usado desde la extensión de VS Code.
+
+**Qué partes hice con IA:** la IA generó el código del proyecto: la configuración, los componentes, los dos hooks, el paso a TypeScript de la lógica de la Misión 2 y este README. Mi trabajo fue definir qué quería y dirigir los cambios:
+
+- Decidí reconstruir mi app de la misión anterior en lugar de hacer una nueva, para centrarme en el cambio de enfoque: de pintar el DOM a mano a que la interfaz salga del estado.
+- Le indiqué dónde tenía que ir el proyecto: `Tema3/Mision3`.
+- Le pedí que subiera el trabajo en varios commits pequeños (mínimo 5), uno por paso: proyecto, lógica, hooks, componentes de la nevera, componentes de resultados y App.
+
+**Prompts reales relevantes:**
+
+> «Créame aquí la misión 3, crea un directorio llamado Tema3 que dentro esté otro llamado Mision3 y ahí lo haces.» (junto con el enunciado y la rúbrica de la misión)
+
+> «Tienes que ir haciendo commits según vas haciendo el código, mínimo 5, hazlo igual que las anteriores, y modifica el README y añade lo de esta misión.»
+
+**Cómo verifiqué lo generado:**
+
+- `npm run lint` (con las reglas de los hooks de React, que avisan de dependencias mal puestas en los efectos o de `setState` dentro de un efecto) y `npm run build` (que pasa `tsc` en modo estricto) terminan sin errores ni avisos.
+- Se probaron todos los flujos en Chrome contra la API real: estado de inicio, aviso con el campo vacío, ingrediente duplicado, límite de 6, cambiar la nevera rápido (solo se ven los resultados de la última búsqueda), filtro por cocina, detalle de la receta, recargar la página (la nevera sigue y el filtro vuelve a «Todas»), ingrediente inventado (mensaje de vacío) y red cortada (mensaje de error y **Reintentar**). No salió ningún error en la consola.
+
+**Qué escribí a mano:** los prompts y las decisiones descritas arriba. El código no lo tecleé yo.
+
+## Autopsia
+
+**1. «Cargando» no se guarda en el estado, se deduce.**
+`usePeticion` solo guarda la última respuesta junto con la tarea y el intento a los que pertenece. Si no coinciden con los actuales, está cargando. Lo discutible es que es menos evidente de leer que un `const [cargando, setCargando] = useState(false)`.
+*Alternativa descartada:* poner `setCargando(true)` al principio del efecto. Es lo más habitual, pero llama a `setState` de forma síncrona dentro del efecto (la regla `react-hooks/set-state-in-effect` lo marca), provoca un render extra y hay que acordarse de volver a ponerlo a `false` en todos los caminos. Al deducirlo, es imposible que «cargando» y los datos se contradigan.
+
+**2. La tarea de búsqueda se memoriza con `useMemo` en vez de pasar la nevera al hook.**
+`App` crea la función `(signal) => buscarRecetas(nevera, signal)` dentro de un `useMemo` que depende de `[nevera]`, y el hook depende de esa función. Lo discutible es que quien use el hook tiene que acordarse de memorizar la función (o definirla fuera del componente, como `pedirSugerencias`). Si no, el efecto se lanzaría en cada render.
+*Alternativa descartada:* un hook con su propio array de dependencias, `usePeticion(tarea, [nevera])`. Es más cómodo de usar, pero ESLint ya no puede comprobar que esas dependencias son las correctas, y se podría olvidar una sin que nada avise.
+
+**3. Guardar en `localStorage` con un efecto.**
+`useLocalStorage` escribe en un `useEffect` cada vez que cambia el valor. Lo discutible es que también escribe en el primer render (vuelve a guardar lo mismo que acaba de leer) y que la escritura ocurre un instante después de pintar, no en el momento del clic.
+*Alternativa descartada:* escribir dentro del propio setter, en el manejador del evento. Ahorra un efecto, pero obliga a envolver `setValor` y a calcular ahí el valor nuevo cuando llega como función (`setNevera((actual) => …)`). Preferí el efecto porque `localStorage` es un sistema externo y el código queda más corto y fácil de explicar.

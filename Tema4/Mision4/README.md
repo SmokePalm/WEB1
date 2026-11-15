@@ -13,7 +13,7 @@ Para esta misión quería algo distinto a «¿Qué cocino?», así que hice la w
 - **Ver el cartel**: los luchadores con su dorsal, filtrados por categoría si quieres, y un botón para **retirar** a alguien (te pide confirmación). Cada vez que alguien se inscribe o se retira, la lista se actualiza sola.
 - **🧪 Laboratorio de sabotaje**: lo añadí para poder enseñar qué pasa cuando el servidor falla.
   - **Datos corruptos**: el API mete 4 luchadores rotos en la lista y Zod los bloquea (es el bonus).
-  - **Servidor caído**: la lista devuelve un error 503. La app lo reintenta y, si sigue fallando, muestra el error con un botón **Reintentar**.
+  - **Servidor caído**: la lista devuelve un error 503. La app lo reintenta una vez y, si sigue fallando, muestra el error con un botón **Reintentar**.
 
 ## Cómo ejecutarlo
 
@@ -88,7 +88,7 @@ Los tipos de TypeScript salen de los esquemas (`z.infer`), así que no he tenido
 
 - `useLuchadores(filtro)` hace el `useQuery` de la lista. La categoría forma parte de la query key, así que al cambiar de filtro se pide la lista nueva y, mientras llega, se sigue viendo la anterior un poco transparente.
 - `useInscribir()` y `useRetirar()` son las mutations del POST y del DELETE. Cuando terminan bien, hacen `invalidateQueries({ queryKey: ["luchadores"] })`. Como todas las listas empiezan por esa key, se refrescan todas a la vez.
-- Solo reintento lo que puede arreglarse solo: un fallo de red o un error 5xx, como mucho dos veces. Un 404 o unos datos rotos no se reintentan, y un POST tampoco, para no inscribir a alguien dos veces.
+- Si una petición de la lista falla, se reintenta solo una vez (`retry: 1`; por defecto serían 3 y te pasarías unos 7 s en «Cargando…»). Las mutations no se reintentan nunca (`retry: false`), para no inscribir a alguien dos veces.
 - Los componentes nunca llaman a `fetch`. Todo pasa por `services/luchadores.ts`, que siempre comprueba `response.ok`, porque `fetch` no da error con un 404 ni con un 500.
 
 ### Que el usuario sepa qué está pasando

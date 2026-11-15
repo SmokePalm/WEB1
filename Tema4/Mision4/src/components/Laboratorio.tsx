@@ -21,7 +21,7 @@ export function Laboratorio({ sabotaje, caida, onSabotaje, onCaida }: Props) {
       <label className="opcion interruptor">
         <input type="checkbox" checked={caida} onChange={(e) => onCaida(e.target.checked)} />
         <span>
-          <strong>Servidor caído</strong>: la lista responde 503. TanStack Query reintenta dos veces y luego enseña el
+          <strong>Servidor caído</strong>: la lista responde 503. TanStack Query lo reintenta una vez y luego enseña el
           error con «Reintentar».
         </span>
       </label>

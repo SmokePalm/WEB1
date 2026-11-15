@@ -410,3 +410,19 @@ La búsqueda se memoriza con `useMemo(…, [nevera])` para que la función solo 
 **3. Guardar en `localStorage` con un efecto.**
 `useLocalStorage` escribe en un `useEffect` cada vez que cambia el valor. Lo discutible es que también escribe en el primer render (vuelve a guardar lo mismo que acaba de leer) y que la escritura ocurre un instante después de pintar, no en el momento del clic.
 *Alternativa descartada:* escribir dentro del propio setter, en el manejador del evento. Ahorra un efecto, pero obliga a envolver `setValor` y a calcular ahí el valor nuevo cuando llega como función (`setNevera((actual) => …)`). Preferí el efecto porque `localStorage` es un sistema externo y el código queda más corto y fácil de explicar.
+
+---
+
+# 🥊 Full Contact · Inscripciones del torneo
+
+Misión 4 (Formularios y peticiones HTTP): inscripción a un torneo de artes marciales con **React Hook Form + Zod** y un cartel de luchadores con **TanStack Query v5**, en React 19 + TypeScript + Vite. Incluye un API simulado dentro de Vite, un laboratorio para romper el servidor y el bonus de validar las respuestas con `safeParse`.
+
+El proyecto y su README completo (descripción, cómo funciona, **Uso de IA** y **Autopsia**) están en [`Tema4/Mision4/`](Tema4/Mision4/README.md).
+
+```bash
+cd Tema4/Mision4
+npm install
+npm run dev      # app + API en http://localhost:5173
+npm test         # pruebas de los esquemas y del bonus
+```
+

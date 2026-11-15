@@ -415,9 +415,9 @@ La búsqueda se memoriza con `useMemo(…, [nevera])` para que la función solo 
 
 # 🥊 Full Contact · Inscripciones del torneo
 
-Misión 4 (Formularios y peticiones HTTP): inscripción a un torneo de artes marciales con **React Hook Form + Zod** y un cartel de luchadores con **TanStack Query v5**, en React 19 + TypeScript + Vite. Incluye un API simulado dentro de Vite, un laboratorio para romper el servidor y el bonus de validar las respuestas con `safeParse`.
+Para la Misión 4 (Formularios y peticiones HTTP) hice la web de inscripciones de un torneo de artes marciales. Tiene un formulario con **React Hook Form + Zod** y un cartel de luchadores con **TanStack Query v5**, en React 19 + TypeScript + Vite. Le añadí un API de prueba dentro de Vite, un laboratorio para hacer fallar el servidor y el bonus de validar las respuestas con `safeParse`.
 
-El proyecto y su README completo (descripción, cómo funciona, **Uso de IA** y **Autopsia**) están en [`Tema4/Mision4/`](Tema4/Mision4/README.md).
+El proyecto y su README completo (cómo funciona, **Uso de IA** y **Autopsia**) están en [`Tema4/Mision4/`](Tema4/Mision4/README.md).
 
 ```bash
 cd Tema4/Mision4

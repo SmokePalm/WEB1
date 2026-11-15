@@ -1,12 +1,12 @@
 import type { Luchador } from "../src/schemas/luchador.ts";
 
-/** Luchadores con los que arranca el servidor (inventados). Se pierden los cambios al reiniciar. */
+/** Luchadores con los que arranca el servidor: nombres inventados con apellidos de luchadores famosos de la UFC. Se pierden los cambios al reiniciar. */
 export const SEMILLA: Luchador[] = [
-  { id: "l-1", dorsal: 1, nombre: "Carmen Ríos", alias: "La Tormenta", email: "carmen.rios@ejemplo.com", fechaNacimiento: "1998-03-14", peso: 57, categoria: "pluma", disciplina: "muay-thai", nivel: "profesional", inscritoEn: "2026-11-01T10:00:00.000Z" },
-  { id: "l-2", dorsal: 2, nombre: "Diego Salvatierra", alias: "", email: "diego.s@ejemplo.com", fechaNacimiento: "2001-07-02", peso: 68, categoria: "ligero", disciplina: "kickboxing", nivel: "amateur", inscritoEn: "2026-11-02T18:30:00.000Z" },
-  { id: "l-3", dorsal: 3, nombre: "Nerea Ocampo", alias: "Martillo", email: "nerea.ocampo@ejemplo.com", fechaNacimiento: "1995-12-21", peso: 79, categoria: "medio", disciplina: "boxeo", nivel: "profesional", inscritoEn: "2026-11-03T09:15:00.000Z" },
-  { id: "l-4", dorsal: 4, nombre: "Íker Valbuena", alias: "El Muro", email: "iker.v@ejemplo.com", fechaNacimiento: "1990-05-30", peso: 102, categoria: "pesado", disciplina: "karate", nivel: "amateur", inscritoEn: "2026-11-05T20:45:00.000Z" },
-  { id: "l-5", dorsal: 5, nombre: "Aitana Ferrer", alias: "Relámpago", email: "aitana.f@ejemplo.com", fechaNacimiento: "2004-09-09", peso: 63, categoria: "ligero", disciplina: "muay-thai", nivel: "novato", inscritoEn: "2026-11-08T12:00:00.000Z" },
+  { id: "l-1", dorsal: 1, nombre: "Carmen Topuria", alias: "La Tormenta", email: "carmen.topuria@ejemplo.com", fechaNacimiento: "1998-03-14", peso: 57, categoria: "pluma", disciplina: "muay-thai", nivel: "profesional", inscritoEn: "2026-11-01T10:00:00.000Z" },
+  { id: "l-2", dorsal: 2, nombre: "Diego Volkanovski", alias: "", email: "diego.volkanovski@ejemplo.com", fechaNacimiento: "2001-07-02", peso: 68, categoria: "ligero", disciplina: "kickboxing", nivel: "amateur", inscritoEn: "2026-11-02T18:30:00.000Z" },
+  { id: "l-3", dorsal: 3, nombre: "Nerea Adesanya", alias: "Martillo", email: "nerea.adesanya@ejemplo.com", fechaNacimiento: "1995-12-21", peso: 79, categoria: "medio", disciplina: "boxeo", nivel: "profesional", inscritoEn: "2026-11-03T09:15:00.000Z" },
+  { id: "l-4", dorsal: 4, nombre: "Íker Ngannou", alias: "El Muro", email: "iker.ngannou@ejemplo.com", fechaNacimiento: "1990-05-30", peso: 102, categoria: "pesado", disciplina: "karate", nivel: "amateur", inscritoEn: "2026-11-05T20:45:00.000Z" },
+  { id: "l-5", dorsal: 5, nombre: "Aitana Nunes", alias: "Relámpago", email: "aitana.nunes@ejemplo.com", fechaNacimiento: "2004-09-09", peso: 63, categoria: "ligero", disciplina: "muay-thai", nivel: "novato", inscritoEn: "2026-11-08T12:00:00.000Z" },
 ];
 
 /**

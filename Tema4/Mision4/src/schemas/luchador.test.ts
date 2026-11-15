@@ -53,9 +53,9 @@ describe("luchadorSchema (respuesta del API)", () => {
   const luchador = {
     id: "l-1",
     dorsal: 1,
-    nombre: "Carmen Ríos",
+    nombre: "Carmen Topuria",
     alias: "La Tormenta",
-    email: "carmen@ejemplo.com",
+    email: "carmen.topuria@ejemplo.com",
     fechaNacimiento: "1998-03-14",
     peso: 57,
     categoria: "pluma",

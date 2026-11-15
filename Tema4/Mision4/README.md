@@ -139,7 +139,7 @@ También hay una prueba que lo comprueba (`npm test`, la del «★ bonus» en `s
 
 > «Con todo lo que sabemos de teoría y las anteriores misiones hay que hacer la 4» (con el enunciado y la rúbrica de la misión).
 
-> «Podrías poner los peleadores con nombres reales y los apellidos de peleadores famosos de la UFC, y explícame qué archivos son los que hay código de la web para revisarlos yo.»
+> «Podrías poner los peleadores con nombres reales y los apellidos de peleadores famosos de la UFC.»
 
 **Cómo lo comprobé:**
 
